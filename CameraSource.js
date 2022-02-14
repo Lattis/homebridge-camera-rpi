@@ -62,18 +62,18 @@ function Camera (hap, conf, log) {
 }
 
 Camera.prototype.handleSnapshotRequest = function (request, callback) {
-//   let ffmpegCommand = `\
-// -f video4linux2 -input_format mjpeg -video_size ${request.width}x${request.height} -i /dev/video0 \
-// -vframes 1 -f mjpeg -`
+  let ffmpegCommand = `\
+-f video4linux2 -input_format mjpeg -video_size ${request.width}x${request.height} -i /dev/video0 \
+-vframes 1 -f mjpeg -`
 
-  let ffmpegCommand = `-w ${request.width} -h ${request.height} -o - -n -awb auto -ex auto`
+  // let ffmpegCommand = `-w ${request.width} -h ${request.height} -o - -n -awb auto -ex auto`
   if (this.debug) {
-    // console.log('ffmpeg', ffmpegCommand)
-    console.log('raspistill', ffmpegCommand)
+    console.log('ffmpeg', ffmpegCommand)
+    // console.log('raspistill', ffmpegCommand)
   }
 
-  // let ffmpeg = spawn('ffmpeg', ffmpegCommand.split(' '), { env: process.env })
-  let ffmpeg = spawn('raspistill', ffmpegCommand.split(' '), { env: process.env })
+  let ffmpeg = spawn('ffmpeg', ffmpegCommand.split(' '), { env: process.env })
+  // let ffmpeg = spawn('raspistill', ffmpegCommand.split(' '), { env: process.env })
   var imageBuffer = Buffer.alloc(0)
   ffmpeg.stdout.on('data', function (data) { imageBuffer = Buffer.concat([imageBuffer, data]) })
   if (this.debug) {
@@ -208,9 +208,9 @@ Camera.prototype.handleStreamRequest = function (request) {
 
     this.log(`Starting video stream (${width}x${height}, ${fps} fps, ${bitrate} kbps)`)
     let ffmpegCommand = `\
--f video4linux2 -input_format h264 -video_size ${width}x${height} -framerate ${fps} -timestamps abs -i /dev/video0 \
--vcodec copy -copyts -an -payload_type 99 -ssrc ${ssrc} -f rtp \
--srtp_out_suite AES_CM_128_HMAC_SHA1_80 -srtp_out_params ${srtp} \
+-f video4linux2 -input_format yuv420p -video_size ${width}x${height} -i /dev/video0 \
+-vcodec h264_omx -an -pix_fmt yuv420p -r ${fps} -b:v ${bitrate}k -bufsize ${bitrate}k -maxrate ${bitrate}k \
+-payload_type 99 -ssrc ${ssrc} -f rtp -srtp_out_suite AES_CM_128_HMAC_SHA1_80 -srtp_out_params ${srtp} \
 srtp://${address}:${port}?rtcpport=${port}&localrtcpport=${port}&pkt_size=1378`
     if (this.debug) {
       console.log('ffmpeg', ffmpegCommand)
